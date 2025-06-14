@@ -10,6 +10,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 
 class Fire(nn.Module):
@@ -45,7 +46,8 @@ class Fire(nn.Module):
 
         return x
 
-class SqueezeNet(nn.Module):
+
+class SqueezeNet(nn.Module, LastLayer):
 
     """mobile net with simple bypass"""
     def __init__(self, class_num=100):
@@ -92,6 +94,11 @@ class SqueezeNet(nn.Module):
         x = x.view(x.size(0), -1)
 
         return x
+
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.conv10
+
 
 def squeezenet(class_num=100):
     return SqueezeNet(class_num=class_num)

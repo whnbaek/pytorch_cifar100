@@ -11,9 +11,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .lastlayer import LastLayer
 
-#"""The Attention Module is built by pre-activation Residual Unit [11] with the
-#number of channels in each stage is the same as ResNet [10]."""
+# """The Attention Module is built by pre-activation Residual Unit [11] with the
+# number of channels in each stage is the same as ResNet [10]."""
 
 class PreActResidualUnit(nn.Module):
     """PreAct Residual Unit
@@ -267,15 +268,15 @@ class AttentionModule3(nn.Module):
 
         x_t = self.trunk(x)
 
-        #first downsample out 14
+        # first downsample out 14
         x_s = F.max_pool2d(x, kernel_size=3, stride=2, padding=1)
         x_s = self.soft_resdown1(x_s)
 
-        #mid
+        # mid
         x_s = self.soft_resdown2(x_s)
         x_s = self.soft_resup1(x_s)
 
-        #first upsample out 14
+        # first upsample out 14
         x_s = self.soft_resup2(x_s)
         x_s = F.interpolate(x_s, size=input_size)
 
@@ -293,7 +294,8 @@ class AttentionModule3(nn.Module):
 
         return nn.Sequential(*layers)
 
-class Attention(nn.Module):
+
+class Attention(nn.Module, LastLayer):
     """residual attention netowrk
     Args:
         block_num: attention module number for each stage
@@ -341,9 +343,13 @@ class Attention(nn.Module):
 
         return nn.Sequential(*layers)
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
+
+
 def attention56():
     return Attention([1, 1, 1])
 
 def attention92():
     return Attention([1, 2, 3])
-

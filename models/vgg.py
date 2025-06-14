@@ -10,6 +10,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 cfg = {
     'A' : [64,     'M', 128,      'M', 256, 256,           'M', 512, 512,           'M', 512, 512,           'M'],
@@ -18,7 +19,8 @@ cfg = {
     'E' : [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M']
 }
 
-class VGG(nn.Module):
+
+class VGG(nn.Module, LastLayer):
 
     def __init__(self, features, num_class=100):
         super().__init__()
@@ -40,6 +42,10 @@ class VGG(nn.Module):
         output = self.classifier(output)
 
         return output
+
+    def last(self) -> nn.Module:
+        return self.classifier[-1]
+
 
 def make_layers(cfg, batch_norm=False):
     layers = []
@@ -71,5 +77,3 @@ def vgg16_bn():
 
 def vgg19_bn():
     return VGG(make_layers(cfg['E'], batch_norm=True))
-
-

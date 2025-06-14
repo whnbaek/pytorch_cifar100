@@ -12,21 +12,22 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .lastlayer import LastLayer
 
-#only implements ResNext bottleneck c
+# only implements ResNext bottleneck c
 
 
-#"""This strategy exposes a new dimension, which we call “cardinality”
-#(the size of the set of transformations), as an essential factor
-#in addition to the dimensions of depth and width."""
+# """This strategy exposes a new dimension, which we call “cardinality”
+# (the size of the set of transformations), as an essential factor
+# in addition to the dimensions of depth and width."""
 CARDINALITY = 32
 DEPTH = 4
 BASEWIDTH = 64
 
-#"""The grouped convolutional layer in Fig. 3(c) performs 32 groups
-#of convolutions whose input and output channels are 4-dimensional.
-#The grouped convolutional layer concatenates them as the outputs
-#of the layer."""
+# """The grouped convolutional layer in Fig. 3(c) performs 32 groups
+# of convolutions whose input and output channels are 4-dimensional.
+# The grouped convolutional layer concatenates them as the outputs
+# of the layer."""
 
 class ResNextBottleNeckC(nn.Module):
 
@@ -35,10 +36,10 @@ class ResNextBottleNeckC(nn.Module):
 
         C = CARDINALITY #How many groups a feature map was splitted into
 
-        #"""We note that the input/output width of the template is fixed as
-        #256-d (Fig. 3), We note that the input/output width of the template
-        #is fixed as 256-d (Fig. 3), and all widths are dou- bled each time
-        #when the feature map is subsampled (see Table 1)."""
+        # """We note that the input/output width of the template is fixed as
+        # 256-d (Fig. 3), We note that the input/output width of the template
+        # is fixed as 256-d (Fig. 3), and all widths are dou- bled each time
+        # when the feature map is subsampled (see Table 1)."""
         D = int(DEPTH * out_channels / BASEWIDTH) #number of channels per group
         self.split_transforms = nn.Sequential(
             nn.Conv2d(in_channels, C * D, kernel_size=1, groups=C, bias=False),
@@ -62,7 +63,8 @@ class ResNextBottleNeckC(nn.Module):
     def forward(self, x):
         return F.relu(self.split_transforms(x) + self.shortcut(x))
 
-class ResNext(nn.Module):
+
+class ResNext(nn.Module, LastLayer):
 
     def __init__(self, block, num_blocks, class_names=100):
         super().__init__()
@@ -92,6 +94,10 @@ class ResNext(nn.Module):
         x = self.fc(x)
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
     def _make_layer(self, block, num_block, out_channels, stride):
         """Building resnext block
         Args:
@@ -111,6 +117,7 @@ class ResNext(nn.Module):
 
         return nn.Sequential(*layers)
 
+
 def resnext50():
     """ return a resnext50(c32x4d) network
     """
@@ -125,6 +132,3 @@ def resnext152():
     """ return a resnext101(c32x4d) network
     """
     return ResNext(ResNextBottleNeckC, [3, 4, 36, 3])
-
-
-

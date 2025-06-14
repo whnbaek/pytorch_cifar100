@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 from torch.distributions.bernoulli import Bernoulli
 import random
+from .lastlayer import LastLayer
 
 
 class StochasticDepthBasicBlock(torch.jit.ScriptModule):
@@ -133,7 +134,8 @@ class StochasticDepthBottleNeck(torch.jit.ScriptModule):
 
         return x
 
-class StochasticDepthResNet(nn.Module):
+
+class StochasticDepthResNet(nn.Module, LastLayer):
 
     def __init__(self, block, num_block, num_classes=100):
         super().__init__()
@@ -177,6 +179,10 @@ class StochasticDepthResNet(nn.Module):
 
         return output
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
 
 def stochastic_depth_resnet18():
     """ return a ResNet 18 object
@@ -203,4 +209,3 @@ def stochastic_depth_resnet152():
     """ return a ResNet 152 object
     """
     return StochasticDepthResNet(StochasticDepthBottleNeck, [3, 8, 36, 3])
-

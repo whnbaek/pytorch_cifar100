@@ -12,6 +12,7 @@ from functools import partial
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 
 class BasicConv2d(nn.Module):
@@ -77,8 +78,8 @@ class ShuffleNetUnit(nn.Module):
     def __init__(self, input_channels, output_channels, stage, stride, groups):
         super().__init__()
 
-        #"""Similar to [9], we set the number of bottleneck channels to 1/4
-        #of the output channels for each ShuffleNet unit."""
+        # """Similar to [9], we set the number of bottleneck channels to 1/4
+        # of the output channels for each ShuffleNet unit."""
         self.bottlneck = nn.Sequential(
             PointwiseConv2d(
                 input_channels,
@@ -88,8 +89,8 @@ class ShuffleNetUnit(nn.Module):
             nn.ReLU(inplace=True)
         )
 
-        #"""Note that for Stage 2, we do not apply group convolution on the first pointwise
-        #layer because the number of input channels is relatively small."""
+        # """Note that for Stage 2, we do not apply group convolution on the first pointwise
+        # layer because the number of input channels is relatively small."""
         if stage == 2:
             self.bottlneck = nn.Sequential(
                 PointwiseConv2d(
@@ -121,12 +122,12 @@ class ShuffleNetUnit(nn.Module):
         self.fusion = self._add
         self.shortcut = nn.Sequential()
 
-        #"""As for the case where ShuffleNet is applied with stride,
-        #we simply make two modifications (see Fig 2 (c)):
-        #(i) add a 3 × 3 average pooling on the shortcut path;
-        #(ii) replace the element-wise addition with channel concatenation,
-        #which makes it easy to enlarge channel dimension with little extra
-        #computation cost.
+        # """As for the case where ShuffleNet is applied with stride,
+        # we simply make two modifications (see Fig 2 (c)):
+        # (i) add a 3 × 3 average pooling on the shortcut path;
+        # (ii) replace the element-wise addition with channel concatenation,
+        # which makes it easy to enlarge channel dimension with little extra
+        # computation cost.
         if stride != 1 or input_channels != output_channels:
             self.shortcut = nn.AvgPool2d(3, stride=2, padding=1)
 
@@ -157,7 +158,8 @@ class ShuffleNetUnit(nn.Module):
 
         return output
 
-class ShuffleNet(nn.Module):
+
+class ShuffleNet(nn.Module, LastLayer):
 
     def __init__(self, num_blocks, num_classes=100, groups=3):
         super().__init__()
@@ -217,6 +219,10 @@ class ShuffleNet(nn.Module):
 
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
     def _make_stage(self, block, num_blocks, output_channels, stride, stage, groups):
         """make shufflenet stage
 
@@ -248,9 +254,6 @@ class ShuffleNet(nn.Module):
 
         return nn.Sequential(*stage)
 
+
 def shufflenet():
     return ShuffleNet([4, 8, 4])
-
-
-
-

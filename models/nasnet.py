@@ -10,6 +10,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 class SeperableConv2d(nn.Module):
 
@@ -198,23 +199,23 @@ class ReductionCell(nn.Module):
             nn.BatchNorm2d(output_channels)
         )
 
-        #block1
+        # block1
         self.layer1block1_left = SeperableBranch(output_channels, output_channels, 7, stride=2, padding=3)
         self.layer1block1_right = SeperableBranch(output_channels, output_channels, 5, stride=2, padding=2)
 
-        #block2
+        # block2
         self.layer1block2_left = nn.MaxPool2d(3, stride=2, padding=1)
         self.layer1block2_right = SeperableBranch(output_channels, output_channels, 7, stride=2, padding=3)
 
-        #block3
+        # block3
         self.layer1block3_left = nn.AvgPool2d(3, 2, 1)
         self.layer1block3_right = SeperableBranch(output_channels, output_channels, 5, stride=2, padding=2)
 
-        #block5
+        # block5
         self.layer2block1_left = nn.MaxPool2d(3, 2, 1)
         self.layer2block1_right = SeperableBranch(output_channels, output_channels, 3, stride=1, padding=1)
 
-        #block4
+        # block4
         self.layer2block2_left = nn.AvgPool2d(3, 1, 1)
         self.layer2block2_right = nn.Sequential()
 
@@ -240,7 +241,7 @@ class ReductionCell(nn.Module):
         ], 1), x
 
 
-class NasNetA(nn.Module):
+class NasNetA(nn.Module, LastLayer):
 
     def __init__(self, repeat_cell_num, reduction_num, filters, stemfilter, class_num=100):
         super().__init__()
@@ -259,7 +260,6 @@ class NasNetA(nn.Module):
         self.relu = nn.ReLU()
         self.avg = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Linear(self.filters * 6, class_num)
-
 
     def _make_normal(self, block, repeat, output):
         """make normal cell
@@ -307,7 +307,6 @@ class NasNetA(nn.Module):
 
         return nn.Sequential(*layers)
 
-
     def forward(self, x):
 
         x = self.stem(x)
@@ -320,9 +319,12 @@ class NasNetA(nn.Module):
 
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
 
 def nasnet():
 
     #stem filters must be 44, it's a pytorch workaround, cant change to other number
     return NasNetA(4, 2, 44, 44)
-

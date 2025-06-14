@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 
 class WideBasic(nn.Module):
@@ -42,7 +43,8 @@ class WideBasic(nn.Module):
 
         return residual + shortcut
 
-class WideResNet(nn.Module):
+
+class WideResNet(nn.Module, LastLayer):
     def __init__(self, num_classes, block, depth=50, widen_factor=1):
         super().__init__()
 
@@ -71,6 +73,10 @@ class WideResNet(nn.Module):
         x = self.linear(x)
 
         return x
+
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
         """make resnet layers(by layer i didnt mean this 'layer' was the

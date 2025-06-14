@@ -10,6 +10,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 class BasicConv2d(nn.Module):
 
@@ -221,8 +222,8 @@ class ReductionB(nn.Module):
 class InceptionC(nn.Module):
 
     def __init__(self, input_channels):
-        #"""Figure 6. The schema for 8×8 grid modules of the pure
-        #Inceptionv4 network. This is the Inception-C block of Figure 9."""
+        # """Figure 6. The schema for 8×8 grid modules of the pure
+        # Inceptionv4 network. This is the Inception-C block of Figure 9."""
 
         super().__init__()
 
@@ -273,7 +274,8 @@ class InceptionC(nn.Module):
 
         return torch.cat(output, 1)
 
-class InceptionV4(nn.Module):
+
+class InceptionV4(nn.Module, LastLayer):
 
     def __init__(self, A, B, C, k=192, l=224, m=256, n=384, class_nums=100):
 
@@ -287,7 +289,7 @@ class InceptionV4(nn.Module):
         self.inception_c = self._generate_inception_module(1536, 1536, C, InceptionC)
         self.avgpool = nn.AvgPool2d(7)
 
-        #"""Dropout (keep 0.8)"""
+        # """Dropout (keep 0.8)"""
         self.dropout = nn.Dropout2d(1 - 0.8)
         self.linear = nn.Linear(1536, class_nums)
 
@@ -314,6 +316,11 @@ class InceptionV4(nn.Module):
             input_channels = output_channels
 
         return layers
+
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
+
 
 class InceptionResNetA(nn.Module):
 
@@ -465,10 +472,10 @@ class InceptionResNetReductionA(nn.Module):
 
 class InceptionResNetReductionB(nn.Module):
 
-    #"""Figure 18. The schema for 17 × 17 to 8 × 8 grid-reduction module.
-    #Reduction-B module used by the wider Inception-ResNet-v1 network in
-    #Figure 15."""
-    #I believe it was a typo(Inception-ResNet-v1 should be Inception-ResNet-v2)
+    # """Figure 18. The schema for 17 × 17 to 8 × 8 grid-reduction module.
+    # Reduction-B module used by the wider Inception-ResNet-v1 network in
+    # Figure 15."""
+    # I believe it was a typo(Inception-ResNet-v1 should be Inception-ResNet-v2)
     def __init__(self, input_channels):
 
         super().__init__()
@@ -501,7 +508,8 @@ class InceptionResNetReductionB(nn.Module):
         x = torch.cat(x, 1)
         return x
 
-class InceptionResNetV2(nn.Module):
+
+class InceptionResNetV2(nn.Module, LastLayer):
 
     def __init__(self, A, B, C, k=256, l=256, m=384, n=384, class_nums=100):
         super().__init__()
@@ -513,9 +521,9 @@ class InceptionResNetV2(nn.Module):
         self.reduction_b = InceptionResNetReductionB(1154)
         self.inception_resnet_c = self._generate_inception_module(2146, 2048, C, InceptionResNetC)
 
-        #6x6 featuresize
+        # 6x6 featuresize
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        #"""Dropout (keep 0.8)"""
+        # """Dropout (keep 0.8)"""
         self.dropout = nn.Dropout2d(1 - 0.8)
         self.linear = nn.Linear(2048, class_nums)
 
@@ -542,6 +550,11 @@ class InceptionResNetV2(nn.Module):
             input_channels = output_channels
 
         return layers
+
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
+
 
 def inceptionv4():
     return InceptionV4(4, 7, 3)

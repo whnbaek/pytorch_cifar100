@@ -11,6 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .lastlayer import LastLayer
 
 
 class LinearBottleNeck(nn.Module):
@@ -44,7 +45,8 @@ class LinearBottleNeck(nn.Module):
 
         return residual
 
-class MobileNetV2(nn.Module):
+
+class MobileNetV2(nn.Module, LastLayer):
 
     def __init__(self, class_num=100):
         super().__init__()
@@ -97,6 +99,11 @@ class MobileNetV2(nn.Module):
             repeat -= 1
 
         return nn.Sequential(*layers)
+
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.conv2
+
 
 def mobilenetv2():
     return MobileNetV2()

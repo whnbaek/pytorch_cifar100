@@ -11,6 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .lastlayer import LastLayer
 
 class BasicResidualSEBlock(nn.Module):
 
@@ -107,7 +108,8 @@ class BottleneckResidualSEBlock(nn.Module):
 
         return F.relu(x)
 
-class SEResNet(nn.Module):
+
+class SEResNet(nn.Module, LastLayer):
 
     def __init__(self, block, block_num, class_num=100):
         super().__init__()
@@ -142,6 +144,9 @@ class SEResNet(nn.Module):
 
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
 
     def _make_stage(self, block, num, out_channels, stride):
 
@@ -154,6 +159,7 @@ class SEResNet(nn.Module):
             num -= 1
 
         return nn.Sequential(*layers)
+
 
 def seresnet18():
     return SEResNet(BasicResidualSEBlock, [2, 2, 2, 2])

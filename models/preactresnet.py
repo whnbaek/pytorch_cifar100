@@ -9,6 +9,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .lastlayer import LastLayer
 
 class PreActBasic(nn.Module):
 
@@ -68,7 +69,8 @@ class PreActBottleNeck(nn.Module):
 
         return res + shortcut
 
-class PreActResNet(nn.Module):
+
+class PreActResNet(nn.Module, LastLayer):
 
     def __init__(self, block, num_block, class_num=100):
         super().__init__()
@@ -114,6 +116,11 @@ class PreActResNet(nn.Module):
 
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
+
+
 def preactresnet18():
     return PreActResNet(PreActBasic, [2, 2, 2, 2])
 
@@ -128,4 +135,3 @@ def preactresnet101():
 
 def preactresnet152():
     return PreActResNet(PreActBottleNeck, [3, 8, 36, 3])
-

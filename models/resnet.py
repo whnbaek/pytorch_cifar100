@@ -10,6 +10,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 class BasicBlock(nn.Module):
     """Basic Block for resnet 18 and resnet 34
@@ -77,7 +78,8 @@ class BottleNeck(nn.Module):
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
-class ResNet(nn.Module):
+
+class ResNet(nn.Module, LastLayer):
 
     def __init__(self, block, num_block, num_classes=100):
         super().__init__()
@@ -88,8 +90,8 @@ class ResNet(nn.Module):
             nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True))
-        #we use a different inputsize than the original paper
-        #so conv2_x's stride is 1
+        # we use a different inputsize than the original paper
+        # so conv2_x's stride is 1
         self.conv2_x = self._make_layer(block, 64, num_block[0], 1)
         self.conv3_x = self._make_layer(block, 128, num_block[1], 2)
         self.conv4_x = self._make_layer(block, 256, num_block[2], 2)
@@ -134,6 +136,11 @@ class ResNet(nn.Module):
 
         return output
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
+
 def resnet18():
     """ return a ResNet 18 object
     """
@@ -158,6 +165,3 @@ def resnet152():
     """ return a ResNet 152 object
     """
     return ResNet(BottleNeck, [3, 8, 36, 3])
-
-
-

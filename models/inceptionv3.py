@@ -9,6 +9,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 
 class BasicConv2d(nn.Module):
@@ -26,7 +27,7 @@ class BasicConv2d(nn.Module):
 
         return x
 
-#same naive inception module
+# same naive inception module
 class InceptionA(nn.Module):
 
     def __init__(self, input_channels, pool_features):
@@ -68,8 +69,8 @@ class InceptionA(nn.Module):
 
         return torch.cat(outputs, 1)
 
-#downsample
-#Factorization into smaller convolutions
+# downsample
+# Factorization into smaller convolutions
 class InceptionB(nn.Module):
 
     def __init__(self, input_channels):
@@ -104,7 +105,7 @@ class InceptionB(nn.Module):
 
         return torch.cat(outputs, 1)
 
-#Factorizing Convolutions with Large Filter Size
+# Factorizing Convolutions with Large Filter Size
 class InceptionC(nn.Module):
     def __init__(self, input_channels, channels_7x7):
         super().__init__()
@@ -187,7 +188,7 @@ class InceptionD(nn.Module):
         return torch.cat(outputs, 1)
 
 
-#same
+# same
 class InceptionE(nn.Module):
     def __init__(self, input_channels):
         super().__init__()
@@ -209,16 +210,16 @@ class InceptionE(nn.Module):
 
     def forward(self, x):
 
-        #x -> 1x1 (same)
+        # x -> 1x1 (same)
         branch1x1 = self.branch1x1(x)
 
         # x -> 1x1 -> 3x1
         # x -> 1x1 -> 1x3
         # concatenate(3x1, 1x3)
-        #"""7. Inception modules with expanded the filter bank outputs.
-        #This architecture is used on the coarsest (8 × 8) grids to promote
-        #high dimensional representations, as suggested by principle
-        #2 of Section 2."""
+        # """7. Inception modules with expanded the filter bank outputs.
+        # This architecture is used on the coarsest (8 × 8) grids to promote
+        # high dimensional representations, as suggested by principle
+        # 2 of Section 2."""
         branch3x3 = self.branch3x3_1(x)
         branch3x3 = [
             self.branch3x3_2a(branch3x3),
@@ -228,7 +229,7 @@ class InceptionE(nn.Module):
 
         # x -> 1x1 -> 3x3 -> 1x3
         # x -> 1x1 -> 3x3 -> 3x1
-        #concatenate(1x3, 3x1)
+        # concatenate(1x3, 3x1)
         branch3x3stack = self.branch3x3stack_1(x)
         branch3x3stack = self.branch3x3stack_2(branch3x3stack)
         branch3x3stack = [
@@ -243,7 +244,8 @@ class InceptionE(nn.Module):
 
         return torch.cat(outputs, 1)
 
-class InceptionV3(nn.Module):
+
+class InceptionV3(nn.Module, LastLayer):
 
     def __init__(self, num_classes=100):
         super().__init__()
@@ -253,12 +255,12 @@ class InceptionV3(nn.Module):
         self.Conv2d_3b_1x1 = BasicConv2d(64, 80, kernel_size=1)
         self.Conv2d_4a_3x3 = BasicConv2d(80, 192, kernel_size=3)
 
-        #naive inception module
+        # naive inception module
         self.Mixed_5b = InceptionA(192, pool_features=32)
         self.Mixed_5c = InceptionA(256, pool_features=64)
         self.Mixed_5d = InceptionA(288, pool_features=64)
 
-        #downsample
+        # downsample
         self.Mixed_6a = InceptionB(288)
 
         self.Mixed_6b = InceptionC(768, channels_7x7=128)
@@ -266,70 +268,71 @@ class InceptionV3(nn.Module):
         self.Mixed_6d = InceptionC(768, channels_7x7=160)
         self.Mixed_6e = InceptionC(768, channels_7x7=192)
 
-        #downsample
+        # downsample
         self.Mixed_7a = InceptionD(768)
 
         self.Mixed_7b = InceptionE(1280)
         self.Mixed_7c = InceptionE(2048)
 
-        #6*6 feature size
+        # 6*6 feature size
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = nn.Dropout2d()
         self.linear = nn.Linear(2048, num_classes)
 
     def forward(self, x):
 
-        #32 -> 30
+        # 32 -> 30
         x = self.Conv2d_1a_3x3(x)
         x = self.Conv2d_2a_3x3(x)
         x = self.Conv2d_2b_3x3(x)
         x = self.Conv2d_3b_1x1(x)
         x = self.Conv2d_4a_3x3(x)
 
-        #30 -> 30
+        # 30 -> 30
         x = self.Mixed_5b(x)
         x = self.Mixed_5c(x)
         x = self.Mixed_5d(x)
 
-        #30 -> 14
-        #Efficient Grid Size Reduction to avoid representation
-        #bottleneck
+        # 30 -> 14
+        # Efficient Grid Size Reduction to avoid representation
+        # bottleneck
         x = self.Mixed_6a(x)
 
-        #14 -> 14
-        #"""In practice, we have found that employing this factorization does not
-        #work well on early layers, but it gives very good results on medium
-        #grid-sizes (On m × m feature maps, where m ranges between 12 and 20).
-        #On that level, very good results can be achieved by using 1 × 7 convolutions
-        #followed by 7 × 1 convolutions."""
+        # 14 -> 14
+        # """In practice, we have found that employing this factorization does not
+        # work well on early layers, but it gives very good results on medium
+        # grid-sizes (On m × m feature maps, where m ranges between 12 and 20).
+        # On that level, very good results can be achieved by using 1 × 7 convolutions
+        # followed by 7 × 1 convolutions."""
         x = self.Mixed_6b(x)
         x = self.Mixed_6c(x)
         x = self.Mixed_6d(x)
         x = self.Mixed_6e(x)
 
-        #14 -> 6
-        #Efficient Grid Size Reduction
+        # 14 -> 6
+        # Efficient Grid Size Reduction
         x = self.Mixed_7a(x)
 
-        #6 -> 6
-        #We are using this solution only on the coarsest grid,
-        #since that is the place where producing high dimensional
-        #sparse representation is the most critical as the ratio of
-        #local processing (by 1 × 1 convolutions) is increased compared
-        #to the spatial aggregation."""
+        # 6 -> 6
+        # We are using this solution only on the coarsest grid,
+        # since that is the place where producing high dimensional
+        # sparse representation is the most critical as the ratio of
+        # local processing (by 1 × 1 convolutions) is increased compared
+        # to the spatial aggregation."""
         x = self.Mixed_7b(x)
         x = self.Mixed_7c(x)
 
-        #6 -> 1
+        # 6 -> 1
         x = self.avgpool(x)
         x = self.dropout(x)
         x = x.view(x.size(0), -1)
         x = self.linear(x)
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.linear
+
 
 def inceptionv3():
     return InceptionV3()
-
-
-

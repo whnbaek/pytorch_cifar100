@@ -9,6 +9,7 @@
 
 import torch
 import torch.nn as nn
+from .lastlayer import LastLayer
 
 class SeperableConv2d(nn.Module):
 
@@ -202,7 +203,8 @@ class ExitFLow(nn.Module):
 
         return output
 
-class Xception(nn.Module):
+
+class Xception(nn.Module, LastLayer):
 
     def __init__(self, block, num_class=100):
         super().__init__()
@@ -221,7 +223,10 @@ class Xception(nn.Module):
 
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
+
 def xception():
     return Xception(MiddleFLowBlock)
-
-

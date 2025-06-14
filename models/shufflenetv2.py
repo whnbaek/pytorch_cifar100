@@ -11,6 +11,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .lastlayer import LastLayer
 
 
 def channel_split(x, split):
@@ -81,7 +82,6 @@ class ShuffleUnit(nn.Module):
                 nn.ReLU(inplace=True)
             )
 
-
     def forward(self, x):
 
         if self.stride == 1 and self.out_channels == self.in_channels:
@@ -97,7 +97,8 @@ class ShuffleUnit(nn.Module):
 
         return x
 
-class ShuffleNetV2(nn.Module):
+
+class ShuffleNetV2(nn.Module, LastLayer):
 
     def __init__(self, ratio=1, class_num=100):
         super().__init__()
@@ -140,6 +141,10 @@ class ShuffleNetV2(nn.Module):
 
         return x
 
+    def last(self) -> nn.Module:
+        """Return the last layer of the model."""
+        return self.fc
+
     def _make_stage(self, in_channels, out_channels, repeat):
         layers = []
         layers.append(ShuffleUnit(in_channels, out_channels, 2))
@@ -150,10 +155,6 @@ class ShuffleNetV2(nn.Module):
 
         return nn.Sequential(*layers)
 
+
 def shufflenetv2():
     return ShuffleNetV2()
-
-
-
-
-
